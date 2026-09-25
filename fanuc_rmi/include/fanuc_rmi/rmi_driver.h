@@ -11,6 +11,8 @@
 #include <fcntl.h>
 
 // standard libraries
+#include <atomic>
+#include <chrono>
 #include <climits>
 #include <cmath>
 #include <iomanip>
@@ -21,7 +23,6 @@
 #include <thread>
 #include <pthread.h>
 #include <queue>
-#include <atomic>
 #include <memory>
 #include <fanuc_rmi/rmi_communication.h>
 

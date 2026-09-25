@@ -28,6 +28,8 @@ manipulator_controller:
       - position
       - velocity
     open_loop_control: true
+    interpolate_from_desired_state: true
+    allow_nonzero_velocity_at_trajectory_end: true
     constraints:
       goal_time: 0.0
 

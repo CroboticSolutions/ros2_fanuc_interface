@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.22)
 project(fanuc_srvs)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -12,14 +12,12 @@ find_package(fanuc_eth_ip REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 
-find_package(rosidl_default_generators REQUIRED)
-
 find_package(fanuc_srvs_msgs REQUIRED)
 
-include_directories(/usr/local/include/EIPScanner)
-
 add_executable(fanuc_srvs src/fanuc_srvs.cpp)
-ament_target_dependencies(fanuc_srvs fanuc_srvs_msgs rclcpp std_srvs  fanuc_eth_ip)
+target_compile_features(fanuc_srvs PUBLIC cxx_std_17)
+ament_target_dependencies(fanuc_srvs fanuc_srvs_msgs rclcpp std_srvs)
+target_link_libraries(fanuc_srvs fanuc_eth_ip::fanuc_eth_ip)
 
 install(TARGETS
   fanuc_srvs

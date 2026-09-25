@@ -1,7 +1,9 @@
 #include <fanuc_rmi/rmi_driver.h>
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp/duration.hpp>
 #include <rclcpp/clock.hpp>
+#include <rclcpp/duration.hpp>
+#include <rclcpp/rclcpp.hpp>
+
+#include <cstring>
 
 #define pi 3.1415926
 

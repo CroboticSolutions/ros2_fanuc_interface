@@ -8,7 +8,7 @@ from launch_ros.substitutions import FindPackageShare
 from launch.conditions import IfCondition
 from launch.actions import GroupAction, OpaqueFunction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from ament_index_python import get_package_share_directory
+from ament_index_python.packages import get_package_share_directory
 import os
 import xacro
 from launch_ros.actions import SetParameter

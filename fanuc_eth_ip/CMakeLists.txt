@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.22)
 project(fanuc_eth_ip)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -6,24 +6,21 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rclpy REQUIRED)
-
 find_package(rcpputils REQUIRED)
 
-include_directories(/usr/local/include/EIPScanner)
-include_directories(include)
+find_library(EIPSCANNER_LIBRARY NAMES EIPScanner PATHS /usr/local/lib REQUIRED)
 
-
-set(HW_IF_INCLUDE_DEPENDS
-  rcpputils
-  rclcpp
+add_library(fanuc_eth_ip SHARED src/fanuc_eth_ip.cpp)
+target_compile_features(fanuc_eth_ip PUBLIC cxx_std_17)
+target_include_directories(fanuc_eth_ip PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  /usr/local/include
+  /usr/local/include/EIPScanner
 )
-
-add_library(fanuc_eth_ip SHARED  src/fanuc_eth_ip.cpp)
-
-target_link_libraries(fanuc_eth_ip EIPScanner)
+target_link_libraries(fanuc_eth_ip PUBLIC ${EIPSCANNER_LIBRARY})
+ament_target_dependencies(fanuc_eth_ip PUBLIC rcpputils rclcpp)
 
 install(
   DIRECTORY include/
@@ -38,11 +35,8 @@ install(
   LIBRARY DESTINATION lib
   INCLUDES DESTINATION include
 )
-ament_export_libraries(fanuc_eth_ip)
-
 
 ament_export_targets(fanuc_eth_ip HAS_LIBRARY_TARGET)
-ament_export_dependencies(${THIS_PACKAGE_INCLUDE_DEPENDS})
-
+ament_export_dependencies(rcpputils rclcpp)
 
 ament_package()

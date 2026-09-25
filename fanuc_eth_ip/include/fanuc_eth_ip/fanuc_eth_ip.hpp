@@ -1,6 +1,10 @@
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <EIPScanner/MessageRouter.h>
-#include <EIPScanner/utils/Logger.h>
 #include <EIPScanner/utils/Buffer.h>
+#include <EIPScanner/utils/Logger.h>
 
 using eipScanner::SessionInfo;
 using eipScanner::MessageRouter;
