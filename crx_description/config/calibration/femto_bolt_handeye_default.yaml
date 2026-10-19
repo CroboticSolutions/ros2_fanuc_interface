@@ -1,0 +1,18 @@
+# Repo default for the CRX wrist Orbbec Femto Bolt mount (flange -> camera_base_link).
+# Used only when the robot has no active calibration in
+# ~/.ros/calibration/<robot_id>/femto_bolt_handeye/current.yaml (robot_id crx10ia_l or
+# crx10ia; hand_eye_calibration/calibration_store.py). GUI Apply never edits this file.
+# PLACEHOLDER (never calibrated): the seam_ros2_pkg sim mount (J6_link 0.30/0/0.13 m,
+# pitch 20 deg) re-expressed on flange (J6_link -> flange is +0.16 m x).
+calibration_id: repo-default-crx-femto-placeholder
+kind: camera_mount
+parent_link: flange
+child_link: camera_base_link
+# Real robot: through the driver's own depth->colour extrinsics (driver publishes TF).
+real:
+  xyz: "0.14 0 0.13"
+  rpy: "0 0.34906585 0"
+# Simulation: through the nominal femto_bolt chain of orbbec_description.
+nominal:
+  xyz: "0.14 0 0.13"
+  rpy: "0 0.34906585 0"

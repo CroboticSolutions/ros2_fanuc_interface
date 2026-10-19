@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!--
+  FANUC CRX wrist camera (eye-in-hand on flange), real robot and Gazebo.
+
+  The mount origin (flange -> camera root) is NOT written here. It is loaded from
+  calibration_file, a YAML with a `real` and a `nominal` origin:
+    - normally the robot's active calibration
+      ~/.ros/calibration/<robot_id>/<camera>_handeye/current.yaml, written by GUI Apply
+      (hand_eye_calibration.crx_apply_cli, calibration_store.py);
+    - otherwise crx_description/config/calibration/<camera>_handeye_default.yaml.
+
+  femto_bolt: flange -> camera_base_link (orbbec_description femto_bolt). On the real
+    robot the Orbbec driver owns the internal TFs (publish_tf:=true), so only
+    camera_base_link -> camera_link is in the URDF; nominal adds the internal chain.
+  realsense_d435: flange -> camera_bottom_screw_frame (realsense2_description sensor_d435,
+    nominal extrinsics in both cases: the GUI runs the D435 driver with publish_tf:=false).
+  Frame names match the driver defaults (camera_name camera).
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="crx_wrist_camera_defs">
+
+  <xacro:macro name="crx_wrist_camera" params="camera parent_link calibration_file nominal:=false">
+    <xacro:property name="cam_cal" value="${xacro.load_yaml(calibration_file)}"/>
+    <xacro:property name="cam_origin" value="${cam_cal['nominal'] if nominal else cam_cal['real']}"/>
+    <xacro:if value="${camera == 'femto_bolt'}">
+      <xacro:include filename="$(find orbbec_description)/urdf/femto_bolt.urdf.xacro"/>
+      <xacro:femto_bolt prefix="camera" parent="${parent_link}" use_nominal_extrinsics="${nominal}">
+        <origin xyz="${cam_origin['xyz']}" rpy="${cam_origin['rpy']}"/>
+      </xacro:femto_bolt>
+    </xacro:if>
+    <xacro:if value="${camera == 'realsense_d435'}">
+      <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro"/>
+      <xacro:sensor_d435 parent="${parent_link}" name="camera" use_nominal_extrinsics="true"
+                         add_plug="false" use_mesh="true">
+        <origin xyz="${cam_origin['xyz']}" rpy="${cam_origin['rpy']}"/>
+      </xacro:sensor_d435>
+    </xacro:if>
+  </xacro:macro>
+
+</robot>

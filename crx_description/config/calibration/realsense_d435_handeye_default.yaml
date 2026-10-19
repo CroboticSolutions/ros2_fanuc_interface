@@ -1,0 +1,18 @@
+# Repo default for the CRX wrist RealSense D435 mount (flange -> camera_bottom_screw_frame).
+# Used only when the robot has no active calibration in
+# ~/.ros/calibration/<robot_id>/realsense_d435_handeye/current.yaml (robot_id crx10ia_l
+# or crx10ia; hand_eye_calibration/calibration_store.py). GUI Apply never edits this file.
+# The D435 driver runs with publish_tf:=false, so the URDF owns the whole camera chain
+# (nominal extrinsics) on the real robot too; real and nominal only differ once a real
+# calibration is applied.
+# PLACEHOLDER (never calibrated): the seam_ros2_pkg sim mount re-expressed on flange.
+calibration_id: repo-default-crx-d435-placeholder
+kind: camera_mount
+parent_link: flange
+child_link: camera_bottom_screw_frame
+real:
+  xyz: "0.14 0 0.13"
+  rpy: "0 0.34906585 0"
+nominal:
+  xyz: "0.14 0 0.13"
+  rpy: "0 0.34906585 0"

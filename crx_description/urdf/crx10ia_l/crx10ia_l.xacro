@@ -6,8 +6,17 @@
   <xacro:arg name="robot_ip" default="192.168.150.2" />
   <xacro:arg name="use_rmi" default="false" />
   <xacro:arg name="gz" default="false" />
+  <!-- welding cell digital twin (table, pedestal, positioner), see crx10ia_l_cell.xacro -->
+  <xacro:arg name="cell" default="true" />
 
   <xacro:include filename="$(find crx_description)/urdf/crx10ia_l/crx10ia_l.urdf.xacro"/>
-  <xacro:crx10ia_l use_mock_hardware="$(arg use_mock_hardware)" robot_ip="$(arg robot_ip)" read_only="$(arg read_only)" use_rmi="$(arg use_rmi)" gz="$(arg gz)" />
+  <xacro:include filename="$(find crx_description)/urdf/include/crx_calibration_args.xacro"/>
+  <xacro:crx10ia_l use_mock_hardware="$(arg use_mock_hardware)" robot_ip="$(arg robot_ip)" read_only="$(arg read_only)" use_rmi="$(arg use_rmi)" gz="$(arg gz)" tcp_xyz="${crx_tcp_origin['xyz']}" tcp_rpy="${crx_tcp_origin['rpy']}"/>
+  <xacro:crx_calibrated_wrist_camera/>
+
+  <xacro:if value="$(arg cell)">
+    <xacro:include filename="$(find crx_description)/urdf/crx10ia_l/crx10ia_l_cell.xacro"/>
+    <xacro:crx10ia_l_cell parent="base_link"/>
+  </xacro:if>
   
 </robot>

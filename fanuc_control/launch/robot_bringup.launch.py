@@ -12,6 +12,24 @@ from ament_index_python.packages import get_package_share_directory
 import os
 import xacro
 from launch_ros.actions import SetParameter
+from launch_ros.parameter_descriptions import ParameterValue
+from moveit_configs_utils import MoveItConfigsBuilder
+
+
+# GUI calibration store (hand_eye_calibration/calibration_store.py): one directory per
+# robot model, Apply writes a version and repoints current.yaml.
+_CRX_CAMERA_MOUNTS = {"femto_bolt": "femto_bolt_handeye", "realsense_d435": "realsense_d435_handeye"}
+
+
+def _crx_calibration_file(model, mount, default_name):
+    """Active calibration of this CRX for a mount, else the crx_description default."""
+    store = os.path.join(
+        os.path.expanduser(os.environ.get("ARMS_CALIBRATION_DIR", "~/.ros/calibration")),
+        model, mount, "current.yaml")
+    if os.path.exists(store):
+        return store
+    return os.path.join(get_package_share_directory("crx_description"),
+                        "config", "calibration", default_name)
 
 
 def generate_launch_description():
@@ -76,6 +94,28 @@ def generate_launch_description():
 
     declared_arguments.append(
         DeclareLaunchArgument(
+            "wrist_camera",
+            default_value="none",
+            description="Wrist camera in the URDF: none | femto_bolt | realsense_d435",
+            choices=["none", "femto_bolt", "realsense_d435"],
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "camera_calibration",
+            default_value="",
+            description="Camera mount YAML ('' = active store version or crx_description default)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "tcp_calibration",
+            default_value="",
+            description="Welding TCP YAML ('' = active store version or crx_description default)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
             "gz_headless",
             default_value="true",
             description="Use Gazebo in headless mode",
@@ -97,6 +137,15 @@ def launch_setup(context, *args, **kwargs):
     gz_headless = LaunchConfiguration("gz_headless")
 
     robot_type_str = robot_type.perform(context)
+    # Calibrated wrist camera and TCP: explicit files, else the robot's active store version.
+    wrist_camera = LaunchConfiguration("wrist_camera").perform(context)
+    camera_calibration = LaunchConfiguration("camera_calibration").perform(context).strip()
+    if not camera_calibration and wrist_camera in _CRX_CAMERA_MOUNTS:
+        camera_calibration = _crx_calibration_file(
+            robot_type_str, _CRX_CAMERA_MOUNTS[wrist_camera], f"{wrist_camera}_handeye_default.yaml")
+    tcp_calibration = LaunchConfiguration("tcp_calibration").perform(context).strip() or \
+        _crx_calibration_file(robot_type_str, "welding_tcp", "welding_tcp_default.yaml")
+    print("calibration", camera_calibration or "-", tcp_calibration)
     print("robot_type", robot_type_str)
 
 
@@ -113,11 +162,14 @@ def launch_setup(context, *args, **kwargs):
             " ", "robot_ip:=", robot_ip,
             " ", "read_only:=", read_only,
             " ", "use_rmi:=", use_rmi,
-            " ", "gz:=", gz
+            " ", "gz:=", gz,
+            " ", "wrist_camera:=", wrist_camera,
+            " ", "camera_calibration:=", camera_calibration,
+            " ", "tcp_calibration:=", tcp_calibration,
         ]
     )
     
-    robot_description = {"robot_description": robot_description_content}    
+    robot_description = {"robot_description": ParameterValue(robot_description_content, value_type=str)}    
     robot_state_publisher_node = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
@@ -163,8 +215,31 @@ def launch_setup(context, *args, **kwargs):
         arguments=["--inactive","forward_position_controller", "-c", "/controller_manager"],
     )
 
-    move_group = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([os.path.join(get_package_share_directory(robot_type_str+'_moveit_config'),'launch', 'move_group.launch.py')])
+    # move_group reads robot_description from robot_state_publisher's topic (no
+    # parameter) and respawns, so GUI calibration Apply can push a new URDF and
+    # restart move_group alone (launch_server calibration.py _restart_moveit).
+    moveit_params = MoveItConfigsBuilder(
+        robot_type_str, package_name=robot_type_str + "_moveit_config"
+    ).to_moveit_configs().to_dict()
+    moveit_params.pop("robot_description", None)
+    move_group = Node(
+        package="moveit_ros_move_group",
+        executable="move_group",
+        output="screen",
+        respawn=True,
+        respawn_delay=1.0,
+        parameters=[
+            moveit_params,
+            {
+                "publish_robot_description_semantic": True,
+                "allow_trajectory_execution": True,
+                "publish_planning_scene": True,
+                "publish_geometry_updates": True,
+                "publish_state_updates": True,
+                "publish_transforms_updates": True,
+                "monitor_dynamics": False,
+            },
+        ],
     )
     
     moveit_rviz = IncludeLaunchDescription(

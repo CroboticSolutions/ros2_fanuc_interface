@@ -6,7 +6,9 @@
               read_only:='false' 
               use_rmi:='false' 
               use_mock_hardware:=false 
-              gz:=false">
+              gz:=false
+              tcp_xyz:='0 0 0'
+              tcp_rpy:='0 ${pi/2} 0'">
 
     
     <xacro:if value="${gz}">
@@ -210,8 +212,9 @@
     
     <!-- tcp -->
     <link name="tcp" />
+    <!-- tcp_xyz/tcp_rpy: welding TCP from the calibration store (top-level crx10ia*.xacro). -->
     <joint name="flange-tcp" type="fixed">
-      <origin xyz="0 0 0" rpy="0 ${pi/2} 0" />
+      <origin xyz="${tcp_xyz}" rpy="${tcp_rpy}" />
       <parent link="flange" />
       <child link="tcp" />
     </joint>

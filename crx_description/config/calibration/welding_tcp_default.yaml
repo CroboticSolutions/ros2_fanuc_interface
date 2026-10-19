@@ -1,0 +1,24 @@
+# Repo default for the CRX welding TCP (flange -> TCP link).
+# Used only when the robot has no active calibration in
+# ~/.ros/calibration/<robot_id>/welding_tcp/current.yaml (robot_id crx10ia_l or crx10ia;
+# hand_eye_calibration/calibration_store.py). GUI Apply never edits this file.
+# The two targets are different links with their own axis convention; wire_axis_tcp is
+# the wire direction in that link's frame (Apply keeps it on the calibrated wire):
+#   real: crx_description "tcp" (MoveIt tip of fanuc_control), +Z = tool axis.
+#   sim:  seam_ros2_pkg "welding_tcp" (MoveIt tip in Gazebo), wire as in welding_stack.py.
+calibration_id: repo-default-crx-tcp
+kind: tool_tcp
+parent_link: flange
+child_link: tcp
+# Real robot: crx_description's flange-tcp default (TCP on the flange, never calibrated).
+real:
+  xyz: "0 0 0"
+  rpy: "0 1.570796326795 0"
+  child_link: tcp
+  wire_axis_tcp: [0.0, 0.0, 1.0]
+# Simulation: seam_ros2_pkg Torch.stl wire tip (welding_torch.xacro).
+sim:
+  xyz: "0.40642358 0 -0.01193078"
+  rpy: "1.57079632679 0 0"
+  child_link: welding_tcp
+  wire_axis_tcp: [0.918, -0.397, 0.0]

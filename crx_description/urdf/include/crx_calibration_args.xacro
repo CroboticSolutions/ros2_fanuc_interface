@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!--
+  Calibrated wrist camera and welding TCP for a bare crx_description CRX (real robot via
+  fanuc_control). Included by the top-level crx10ia*.xacro; declares:
+    wrist_camera        none (default) | femto_bolt | realsense_d435
+    camera_calibration  mount YAML ('' = crx_description default for wrist_camera)
+    tcp_calibration     TCP YAML, its `real` origin is flange -> tcp ('' = crx_description default)
+  GUI launches pass the robot's active ~/.ros/calibration/<robot_id>/... current.yaml
+  (hand_eye_calibration/calibration_store.py), so Apply = new version + push.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:arg name="wrist_camera" default="none"/>
+  <xacro:arg name="camera_calibration" default=""/>
+  <xacro:arg name="tcp_calibration" default=""/>
+  <xacro:property name="crx_wrist_camera" value="$(arg wrist_camera)"/>
+  <xacro:property name="crx_tcp_origin" value="${xacro.load_yaml('$(arg tcp_calibration)' or '$(find crx_description)/config/calibration/welding_tcp_default.yaml')['real']}"/>
+
+  <xacro:macro name="crx_calibrated_wrist_camera">
+    <xacro:if value="${crx_wrist_camera in ('femto_bolt', 'realsense_d435')}">
+      <xacro:property name="cam_file" value="${'$(arg camera_calibration)' or '$(find crx_description)/config/calibration/' + crx_wrist_camera + '_handeye_default.yaml'}"/>
+      <xacro:include filename="$(find crx_description)/urdf/include/crx_wrist_camera.xacro"/>
+      <xacro:crx_wrist_camera camera="${crx_wrist_camera}" parent_link="flange" calibration_file="${cam_file}"/>
+    </xacro:if>
+  </xacro:macro>
+</robot>

@@ -1,11 +1,16 @@
-planning_plugin: ompl_interface/OMPLPlanner
-request_adapters: >-
-  default_planner_request_adapters/AddTimeOptimalParameterization
-  default_planner_request_adapters/ResolveConstraintFrames
-  default_planner_request_adapters/FixWorkspaceBounds
-  default_planner_request_adapters/FixStartStateBounds
-  default_planner_request_adapters/FixStartStateCollision
-  default_planner_request_adapters/FixStartStatePathConstraints
+# Jazzy MoveIt pipeline format (Humble's single-string planning_plugin/request_adapters
+# makes move_group throw "expected [string_array] got [string]" at startup).
+planning_plugins:
+  - ompl_interface/OMPLPlanner
+request_adapters:
+  - default_planning_request_adapters/ResolveConstraintFrames
+  - default_planning_request_adapters/ValidateWorkspaceBounds
+  - default_planning_request_adapters/CheckStartStateBounds
+  - default_planning_request_adapters/CheckStartStateCollision
+response_adapters:
+  - default_planning_response_adapters/AddTimeOptimalParameterization
+  - default_planning_response_adapters/ValidateSolution
+  - default_planning_response_adapters/DisplayMotionPath
 default_planner_config: BiTRRT
 planner_configs:
   SBL:

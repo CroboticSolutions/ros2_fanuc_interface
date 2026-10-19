@@ -1,0 +1,214 @@
+<?xml version="1.0"?>
+<!--
+  Digital twin of the physical CRX-10iA/L welding cell: System-28 perforated
+  welding table, black robot pedestal column standing on the floor beside the
+  table, rotary positioner with 3-jaw chuck on the table and the red unit beside
+  the table next to the pedestal. Loose items on the table (laptops, plates)
+  are intentionally not modelled.
+
+  All dimensions are ESTIMATES from the 2026-10-16 phone video (scale from the
+  100 mm hole grid and the 190 mm robot base). Measure the cell and correct the
+  macro params; nothing else depends on the numbers.
+
+  The cell hangs below base_link so base_link stays the URDF root (planning
+  frame, hand-eye and TCP calibrations keep their meaning).
+
+  Table frame (cell_table_link): origin at the centre of the table top surface,
+  +X towards the operator (front) edge, +Y along the long side towards the
+  free end, positioner at the -Y end of the table, pedestal and red unit on the
+  floor behind the rear (-X) edge, by the welding curtains.
+-->
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <!-- defaults shared with users that place the robot from the floor (seam gz sim):
+       robot base height above the floor = table_top_height + pedestal_above_table -->
+  <xacro:property name="crx10ia_l_cell_table_top_height" value="0.87"/>
+  <xacro:property name="crx10ia_l_cell_pedestal_above_table" value="0.38"/>
+
+  <material name="cell_table_steel">
+    <color rgba="0.16 0.16 0.18 1.0"/>
+  </material>
+  <material name="cell_black">
+    <color rgba="0.07 0.07 0.08 1.0"/>
+  </material>
+  <material name="cell_positioner_gray">
+    <color rgba="0.24 0.26 0.29 1.0"/>
+  </material>
+  <material name="cell_chuck_steel">
+    <color rgba="0.55 0.56 0.58 1.0"/>
+  </material>
+  <material name="cell_dark">
+    <color rgba="0.20 0.20 0.22 1.0"/>
+  </material>
+  <material name="cell_red">
+    <color rgba="0.85 0.12 0.08 1.0"/>
+  </material>
+
+  <xacro:macro name="crx10ia_l_cell" params="
+      parent:=base_link
+      prefix:=''
+      table_length:=2.0
+      table_width:=1.0
+      table_top_height:=${crx10ia_l_cell_table_top_height}
+      top_section_height:=0.20
+      leg_size:=0.10
+      pedestal_size_x:=0.32
+      pedestal_size_y:=0.32
+      pedestal_above_table:=${crx10ia_l_cell_pedestal_above_table}
+      pedestal_gap:=0.0
+      robot_y:=0.17
+      robot_yaw:=0.0
+      positioner:=true
+      positioner_x:=-0.05
+      positioner_y:=-0.78
+      positioner_size_x:=0.45
+      positioner_size_y:=0.40
+      positioner_height:=0.42
+      positioner_axis_height:=0.28
+      faceplate_diameter:=0.40
+      faceplate_thickness:=0.03
+      chuck_diameter:=0.25
+      chuck_length:=0.10
+      feeder:=true
+      feeder_gap:=0.0
+      feeder_y:=-0.26
+      feeder_size_x:=0.22
+      feeder_size_y:=0.48
+      feeder_top_above_table:=0.25
+      feeder_red_height:=0.22
+      feeder_lower_height:=0.13
+      feeder_stand_size:=0.15">
+
+    <xacro:property name="leg_height" value="${table_top_height - top_section_height}"/>
+    <!-- pedestal and red unit stand behind the rear table edge -->
+    <xacro:property name="robot_x" value="${-(table_width/2 + pedestal_gap + pedestal_size_x/2)}"/>
+    <xacro:property name="pedestal_height" value="${table_top_height + pedestal_above_table}"/>
+    <xacro:property name="feeder_x" value="${-(table_width/2 + feeder_gap + feeder_size_x/2)}"/>
+    <xacro:property name="feeder_bottom" value="${feeder_top_above_table - feeder_red_height - feeder_lower_height}"/>
+    <xacro:property name="faceplate_y" value="${positioner_size_y/2 + faceplate_thickness/2}"/>
+    <xacro:property name="chuck_y" value="${positioner_size_y/2 + faceplate_thickness + chuck_length/2}"/>
+
+    <xacro:macro name="cell_box" params="xyz size material">
+      <visual>
+        <origin xyz="${xyz}"/>
+        <geometry><box size="${size}"/></geometry>
+        <material name="${material}"/>
+      </visual>
+      <collision>
+        <origin xyz="${xyz}"/>
+        <geometry><box size="${size}"/></geometry>
+      </collision>
+    </xacro:macro>
+
+    <!-- nominal inertia: without it sdformat drops the link (and its geometry) in Gazebo -->
+    <xacro:macro name="cell_inertial" params="mass">
+      <inertial>
+        <mass value="${mass}"/>
+        <inertia ixx="${mass*0.1}" iyy="${mass*0.1}" izz="${mass*0.1}" ixy="0" ixz="0" iyz="0"/>
+      </inertial>
+    </xacro:macro>
+
+    <xacro:macro name="cell_leg" params="px py">
+      <xacro:cell_box xyz="${px} ${py} ${-top_section_height - leg_height/2}"
+          size="${leg_size} ${leg_size} ${leg_height}" material="cell_black"/>
+    </xacro:macro>
+
+    <!-- ================= welding table ================= -->
+    <link name="${prefix}cell_table_link">
+      <!-- perforated top plate with its 200 mm perforated side walls -->
+      <xacro:cell_box xyz="0 0 ${-top_section_height/2}"
+          size="${table_width} ${table_length} ${top_section_height}" material="cell_table_steel"/>
+      <xacro:cell_leg px="${ (table_width - leg_size)/2}" py="${ (table_length - leg_size)/2}"/>
+      <xacro:cell_leg px="${ (table_width - leg_size)/2}" py="${-(table_length - leg_size)/2}"/>
+      <xacro:cell_leg px="${-(table_width - leg_size)/2}" py="${ (table_length - leg_size)/2}"/>
+      <xacro:cell_leg px="${-(table_width - leg_size)/2}" py="${-(table_length - leg_size)/2}"/>
+      <xacro:cell_inertial mass="300"/>
+    </link>
+
+    <!-- robot base sits on the pedestal at (robot_x, robot_y, pedestal_above_table),
+         rotated robot_yaw in the table frame; this joint is its inverse -->
+    <joint name="${prefix}cell_table_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${prefix}cell_table_link"/>
+      <origin xyz="${-(cos(robot_yaw)*robot_x + sin(robot_yaw)*robot_y)} ${sin(robot_yaw)*robot_x - cos(robot_yaw)*robot_y} ${-pedestal_above_table}"
+          rpy="0 0 ${-robot_yaw}"/>
+    </joint>
+
+    <!-- ================= robot pedestal (black column, floor to robot base) ================= -->
+    <!-- link frame at table-top height under the robot axis -->
+    <link name="${prefix}cell_robot_pedestal_link">
+      <xacro:cell_box xyz="0 0 ${pedestal_above_table - pedestal_height/2}"
+          size="${pedestal_size_x} ${pedestal_size_y} ${pedestal_height}" material="cell_black"/>
+      <xacro:cell_inertial mass="50"/>
+    </link>
+    <joint name="${prefix}cell_robot_pedestal_joint" type="fixed">
+      <parent link="${prefix}cell_table_link"/>
+      <child link="${prefix}cell_robot_pedestal_link"/>
+      <origin xyz="${robot_x} ${robot_y} 0" rpy="0 0 0"/>
+    </joint>
+
+    <!-- ================= rotary positioner ================= -->
+    <xacro:if value="${positioner}">
+      <link name="${prefix}cell_positioner_link">
+        <xacro:cell_box xyz="0 0 ${positioner_height/2}"
+            size="${positioner_size_x} ${positioner_size_y} ${positioner_height}" material="cell_positioner_gray"/>
+        <!-- faceplate, rotation axis along +Y -->
+        <visual>
+          <origin xyz="0 ${faceplate_y} ${positioner_axis_height}" rpy="${pi/2} 0 0"/>
+          <geometry><cylinder radius="${faceplate_diameter/2}" length="${faceplate_thickness}"/></geometry>
+          <material name="cell_positioner_gray"/>
+        </visual>
+        <collision>
+          <origin xyz="0 ${faceplate_y} ${positioner_axis_height}" rpy="${pi/2} 0 0"/>
+          <geometry><cylinder radius="${faceplate_diameter/2}" length="${faceplate_thickness}"/></geometry>
+        </collision>
+        <!-- 3-jaw chuck -->
+        <visual>
+          <origin xyz="0 ${chuck_y} ${positioner_axis_height}" rpy="${pi/2} 0 0"/>
+          <geometry><cylinder radius="${chuck_diameter/2}" length="${chuck_length}"/></geometry>
+          <material name="cell_chuck_steel"/>
+        </visual>
+        <collision>
+          <origin xyz="0 ${chuck_y} ${positioner_axis_height}" rpy="${pi/2} 0 0"/>
+          <geometry><cylinder radius="${chuck_diameter/2}" length="${chuck_length}"/></geometry>
+        </collision>
+        <xacro:cell_inertial mass="80"/>
+      </link>
+      <joint name="${prefix}cell_positioner_joint" type="fixed">
+        <parent link="${prefix}cell_table_link"/>
+        <child link="${prefix}cell_positioner_link"/>
+        <origin xyz="${positioner_x} ${positioner_y} 0" rpy="0 0 0"/>
+      </joint>
+
+      <!-- chuck face on the rotation axis, +Z out of the chuck (for parts clamped in it) -->
+      <link name="${prefix}cell_positioner_chuck_face"/>
+      <joint name="${prefix}cell_positioner_chuck_face_joint" type="fixed">
+        <parent link="${prefix}cell_positioner_link"/>
+        <child link="${prefix}cell_positioner_chuck_face"/>
+        <origin xyz="0 ${chuck_y + chuck_length/2} ${positioner_axis_height}" rpy="${-pi/2} 0 0"/>
+      </joint>
+    </xacro:if>
+
+    <!-- ================= red unit beside the table, next to the pedestal ================= -->
+    <!-- link frame at table-top height; what it stands on is not visible in the video,
+         modelled as a stand down to the floor -->
+    <xacro:if value="${feeder}">
+      <link name="${prefix}cell_feeder_link">
+        <xacro:cell_box xyz="0 0 ${feeder_top_above_table - feeder_red_height/2}"
+            size="${feeder_size_x} ${feeder_size_y} ${feeder_red_height}" material="cell_red"/>
+        <xacro:cell_box xyz="0 0 ${feeder_bottom + feeder_lower_height/2}"
+            size="${feeder_size_x} ${feeder_size_y} ${feeder_lower_height}" material="cell_dark"/>
+        <xacro:cell_box xyz="0 0 ${(feeder_bottom - table_top_height)/2}"
+            size="${feeder_stand_size} ${feeder_stand_size} ${feeder_bottom + table_top_height}" material="cell_black"/>
+        <xacro:cell_inertial mass="20"/>
+      </link>
+      <joint name="${prefix}cell_feeder_joint" type="fixed">
+        <parent link="${prefix}cell_table_link"/>
+        <child link="${prefix}cell_feeder_link"/>
+        <origin xyz="${feeder_x} ${feeder_y} 0" rpy="0 0 0"/>
+      </joint>
+    </xacro:if>
+
+  </xacro:macro>
+
+</robot>

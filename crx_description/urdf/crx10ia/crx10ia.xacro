@@ -6,6 +6,8 @@
   <xacro:arg name="use_rmi" default="false" />
 
   <xacro:include filename="$(find crx_description)/urdf/crx10ia/crx10ia.urdf.xacro"/>
-  <xacro:crx10ia use_mock_hardware="$(arg use_mock_hardware)" robot_ip="$(arg robot_ip)" read_only="$(arg read_only)" use_rmi="$(arg use_rmi)"/>
+  <xacro:include filename="$(find crx_description)/urdf/include/crx_calibration_args.xacro"/>
+  <xacro:crx10ia use_mock_hardware="$(arg use_mock_hardware)" robot_ip="$(arg robot_ip)" read_only="$(arg read_only)" use_rmi="$(arg use_rmi)" tcp_xyz="${crx_tcp_origin['xyz']}" tcp_rpy="${crx_tcp_origin['rpy']}"/>
+  <xacro:crx_calibrated_wrist_camera/>
 
 </robot>
