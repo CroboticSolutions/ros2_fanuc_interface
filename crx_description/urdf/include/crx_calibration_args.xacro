@@ -5,6 +5,7 @@
     wrist_camera        none (default) | femto_bolt | realsense_d435
     camera_calibration  mount YAML ('' = crx_description default for wrist_camera)
     tcp_calibration     TCP YAML, its `real` origin is flange -> tcp ('' = crx_description default)
+    torch_collision     torch collision dimensions YAML ('' = crx_description config/torch_collision.yaml)
   GUI launches pass the robot's active ~/.ros/calibration/<robot_id>/... current.yaml
   (hand_eye_calibration/calibration_store.py), so Apply = new version + push.
 -->
@@ -12,8 +13,10 @@
   <xacro:arg name="wrist_camera" default="none"/>
   <xacro:arg name="camera_calibration" default=""/>
   <xacro:arg name="tcp_calibration" default=""/>
+  <xacro:arg name="torch_collision" default=""/>
   <xacro:property name="crx_wrist_camera" value="$(arg wrist_camera)"/>
-  <xacro:property name="crx_tcp_origin" value="${xacro.load_yaml('$(arg tcp_calibration)' or '$(find crx_description)/config/calibration/welding_tcp_default.yaml')['real']}"/>
+  <xacro:property name="crx_tcp_yaml" value="${xacro.load_yaml('$(arg tcp_calibration)' or '$(find crx_description)/config/calibration/welding_tcp_default.yaml')}"/>
+  <xacro:property name="crx_tcp_origin" value="${crx_tcp_yaml['real']}"/>
 
   <xacro:macro name="crx_calibrated_wrist_camera">
     <xacro:if value="${crx_wrist_camera in ('femto_bolt', 'realsense_d435')}">
@@ -21,5 +24,14 @@
       <xacro:include filename="$(find crx_description)/urdf/include/crx_wrist_camera.xacro"/>
       <xacro:crx_wrist_camera camera="${crx_wrist_camera}" parent_link="flange" calibration_file="${cam_file}"/>
     </xacro:if>
+  </xacro:macro>
+
+  <!-- Primitive welding-torch collision built from the active TCP (crx_torch_collision.xacro).
+       Dimensions: torch_collision YAML, overridden by the TCP version's `torch` block (GUI Apply). -->
+  <xacro:macro name="crx_calibrated_torch_collision">
+    <xacro:include filename="$(find crx_description)/urdf/include/crx_torch_collision.xacro"/>
+    <xacro:property name="torch_defaults" value="${xacro.load_yaml('$(arg torch_collision)' or '$(find crx_description)/config/torch_collision.yaml')}"/>
+    <xacro:crx_torch_collision tcp="${crx_tcp_origin}"
+      cfg="${dict(list(torch_defaults.items()) + list((crx_tcp_yaml.get('torch') or dict()).items()))}"/>
   </xacro:macro>
 </robot>

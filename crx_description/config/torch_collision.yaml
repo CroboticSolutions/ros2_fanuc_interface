@@ -1,0 +1,28 @@
+# Primitive collision model of the welding torch on a real CRX (crx_description).
+# urdf/include/crx_torch_collision.xacro builds it from the active welding TCP
+# (flange -> tcp, its wire_axis_tcp), so GUI TCP Apply moves it with the TCP.
+#   torch_neck:   cylinder parallel to the flange axis (neck_axis in the flange frame; J6
+#                 axis, out of the flange, is +X in crx_description) through the bend, from
+#                 `neck_start` (along the axis) out to the bend. Its offset from the flange
+#                 centre follows from the TCP, so a torch held off-centre by a bracket
+#                 needs no measured offset (the bracket itself is not modelled).
+#   torch_nozzle: cylinder on the wire axis from the bend (`stickout + nozzle_length`
+#                 behind the TCP) to `stickout` behind the TCP.
+#                 MEASURE nozzle_length = bend of the swan neck -> front of the nozzle.
+#   torch_wire:   thin cylinder for the wire stick-out (nozzle front -> TCP). Visual only
+#                 unless wire_collision is true: with collision on, every pose with the
+#                 wire tip on the table/positioner is a collision.
+# Metres. PLACEHOLDER values (ROBO WH-PP W500 not measured yet): measure nozzle
+# diameter/length, stick-out and the thickest part of the neck/mount and edit here.
+# No collision is generated while the TCP is closer than min_tcp_distance to the
+# flange (uncalibrated default TCP 0 0 0).
+enabled: true
+stickout: 0.015
+nozzle_length: 0.10
+nozzle_radius: 0.011
+neck_axis: [1.0, 0.0, 0.0]
+neck_start: 0.03
+neck_radius: 0.032
+wire_radius: 0.0006
+wire_collision: false
+min_tcp_distance: 0.05

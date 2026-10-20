@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<!--
+  Primitive welding-torch collision for a bare crx_description CRX, built from the welding
+  TCP (flange -> tcp origin and wire_axis_tcp of the calibration store YAML) and the
+  dimensions in config/torch_collision.yaml. Cylinders, all fixed to `flange`:
+    torch_neck    parallel to the flange axis (neck_axis, J6 axis = flange +X) through the
+                  bend, from neck_start out to the bend; its offset from the flange centre
+                  follows from the TCP, so an off-centre bracket needs no measured offset
+    torch_nozzle  on the wire axis, from the bend (stickout + nozzle_length behind the TCP)
+                  to the nozzle front (wire stick-out behind the TCP)
+    torch_wire    on the wire axis, the stick-out (nozzle front -> TCP); collision optional
+  Regenerated with the URDF on every launch / GUI TCP Apply, so it follows the TCP.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Cylinder from point p to point q (lists, metres, in parent_link). -->
+  <xacro:macro name="crx_torch_cylinder" params="name parent_link p q radius material collision:=true">
+    <xacro:property name="dx" value="${q[0] - p[0]}"/>
+    <xacro:property name="dy" value="${q[1] - p[1]}"/>
+    <xacro:property name="dz" value="${q[2] - p[2]}"/>
+    <xacro:property name="length" value="${sqrt(dx * dx + dy * dy + dz * dz)}"/>
+    <xacro:property name="cyl_rpy" value="0 ${atan2(sqrt(dx * dx + dy * dy), dz)} ${atan2(dy, dx)}"/>
+    <link name="${name}">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+        <material name="${material}"/>
+      </visual>
+      <xacro:if value="${collision}">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry><cylinder radius="${radius}" length="${length}"/></geometry>
+        </collision>
+      </xacro:if>
+    </link>
+    <joint name="flange-${name}" type="fixed">
+      <origin xyz="${(p[0] + q[0]) / 2} ${(p[1] + q[1]) / 2} ${(p[2] + q[2]) / 2}" rpy="${cyl_rpy}"/>
+      <parent link="${parent_link}"/>
+      <child link="${name}"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- tcp: the `real` entry of the TCP YAML (xyz, rpy, wire_axis_tcp); cfg: torch_collision.yaml. -->
+  <xacro:macro name="crx_torch_collision" params="tcp cfg parent_link:=flange">
+    <xacro:property name="t" value="${[float(v) for v in tcp['xyz'].split()]}"/>
+    <xacro:property name="a" value="${[float(v) for v in tcp['rpy'].split()]}"/>
+    <xacro:property name="w_raw" value="${tcp.get('wire_axis_tcp', [0.0, 0.0, 1.0])}"/>
+    <xacro:property name="w_norm" value="${sqrt(float(w_raw[0]) ** 2 + float(w_raw[1]) ** 2 + float(w_raw[2]) ** 2)}"/>
+    <xacro:property name="w" value="${[float(w_raw[0]) / w_norm, float(w_raw[1]) / w_norm, float(w_raw[2]) / w_norm]}"/>
+    <xacro:property name="tcp_dist" value="${sqrt(t[0] ** 2 + t[1] ** 2 + t[2] ** 2)}"/>
+
+    <xacro:if value="${cfg['enabled'] and tcp_dist >= cfg['min_tcp_distance']}">
+      <material name="torch_collision">
+        <color rgba="1.0 0.55 0.0 0.45"/>
+      </material>
+      <material name="torch_wire">
+        <color rgba="0.85 0.75 0.3 1.0"/>
+      </material>
+
+      <!-- Wire axis in the flange frame: v = Rz(y) Ry(p) Rx(r) w (URDF rpy). -->
+      <xacro:property name="cr" value="${cos(a[0])}"/>
+      <xacro:property name="sr" value="${sin(a[0])}"/>
+      <xacro:property name="cp" value="${cos(a[1])}"/>
+      <xacro:property name="sp" value="${sin(a[1])}"/>
+      <xacro:property name="cy" value="${cos(a[2])}"/>
+      <xacro:property name="sy" value="${sin(a[2])}"/>
+      <xacro:property name="v" value="${[
+        cy * cp * w[0] + (cy * sp * sr - sy * cr) * w[1] + (cy * sp * cr + sy * sr) * w[2],
+        sy * cp * w[0] + (sy * sp * sr + cy * cr) * w[1] + (sy * sp * cr - cy * sr) * w[2],
+        -sp * w[0] + cp * sr * w[1] + cp * cr * w[2]]}"/>
+
+      <xacro:property name="s_front" value="${cfg['stickout']}"/>
+      <xacro:property name="s_back" value="${cfg['stickout'] + cfg['nozzle_length']}"/>
+      <xacro:property name="nozzle_front" value="${[t[0] - s_front * v[0], t[1] - s_front * v[1], t[2] - s_front * v[2]]}"/>
+      <xacro:property name="nozzle_back" value="${[t[0] - s_back * v[0], t[1] - s_back * v[1], t[2] - s_back * v[2]]}"/>
+
+      <!-- Neck parallel to the flange axis n through the bend (nozzle back end), so a torch held
+           off-centre by a bracket is followed without a measured offset: it runs from
+           neck_start (along n) to the bend; the nozzle runs on the wire axis from the bend. -->
+      <xacro:property name="n_raw" value="${cfg.get('neck_axis', [1.0, 0.0, 0.0])}"/>
+      <xacro:property name="n_norm" value="${sqrt(float(n_raw[0]) ** 2 + float(n_raw[1]) ** 2 + float(n_raw[2]) ** 2)}"/>
+      <xacro:property name="n" value="${[float(n_raw[0]) / n_norm, float(n_raw[1]) / n_norm, float(n_raw[2]) / n_norm]}"/>
+      <xacro:property name="bend" value="${nozzle_back}"/>
+      <xacro:property name="neck_end" value="${bend[0] * n[0] + bend[1] * n[1] + bend[2] * n[2]}"/>
+      <xacro:property name="neck_back" value="${cfg['neck_start'] - neck_end}"/>
+
+      <xacro:crx_torch_cylinder name="torch_nozzle" parent_link="${parent_link}" material="torch_collision"
+                                p="${nozzle_front}" q="${bend}" radius="${cfg['nozzle_radius']}"/>
+      <xacro:crx_torch_cylinder name="torch_wire" parent_link="${parent_link}" material="torch_wire"
+                                p="${t}" q="${nozzle_front}" radius="${cfg['wire_radius']}"
+                                collision="${cfg.get('wire_collision', False)}"/>
+      <xacro:if value="${neck_end > cfg['neck_start'] + 0.005}">
+        <xacro:crx_torch_cylinder name="torch_neck" parent_link="${parent_link}" material="torch_collision"
+                                  p="${[bend[0] + neck_back * n[0], bend[1] + neck_back * n[1], bend[2] + neck_back * n[2]]}" q="${bend}"
+                                  radius="${cfg['neck_radius']}"/>
+      </xacro:if>
+    </xacro:if>
+  </xacro:macro>
+
+</robot>
