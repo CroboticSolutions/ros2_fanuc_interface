@@ -44,7 +44,7 @@ public:
     std::vector<double> get_current_pose();
     int read_register(const int& reg);
     void write_register(const int val, const int reg = 1);
-    void write_pos_register(const std::vector<double> j_vals, const int reg = 1);
+    void write_pos_register(const std::vector<double> j_vals, const int reg = 2);
     bool write_DI(const Buffer buffer);
     bool write_flag(const bool val, const int pos);
     void activateDPM(const bool activate = true);
